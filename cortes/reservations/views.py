@@ -3,13 +3,15 @@ from .forms import TableReservationForm
 from django.db.models import Sum
 from django.contrib import messages
 from .models import TableReservation
+from django.core.mail import send_mail
+from datetime import time
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 def index(request):
     return render(request, 'index.html')
-
 
 def book_table(request):
     MAX_PEOPLE = 50  # Nombre maximal de personnes
@@ -19,22 +21,56 @@ def book_table(request):
         reservation_date = form.cleaned_data['date']
         reservation_time = form.cleaned_data['time']
 
-        # Calculer le nombre total de personnes déjà réservées pour cette date et heure
-        total_people = \
-        TableReservation.objects.filter(date=reservation_date, time=reservation_time).aggregate(sum=Sum('people'))[
-            'sum'] or 0
+        # Définir les créneaux horaires
+        evening_start, evening_end = time(18, 0), time(22, 0)
+        lunch_start, lunch_end = time(11, 30), time(14, 30)
 
-        # Ajouter le nombre de personnes de la nouvelle réservation
-        total_people += form.cleaned_data['people']
+        # Vérifier si la réservation est dans l'un des créneaux
+        if lunch_start <= reservation_time < lunch_end or evening_start <= reservation_time < evening_end:
+            # Calculer le total des personnes pour le créneau concerné
+            total_people = TableReservation.objects.filter(
+                date=reservation_date,
+                time__gte=lunch_start if reservation_time < lunch_end else evening_start,
+                time__lt=lunch_end if reservation_time < lunch_end else evening_end,
+            ).aggregate(sum=Sum('people'))['sum'] or 0
+
+            total_people += form.cleaned_data['people']
 
         if total_people <= MAX_PEOPLE:
-            form.save()
+            reservation = form.save()
             messages.success(request, 'Your reservation has been successfully made.')
+
+            # Envoyer un e-mail de confirmation au client
+            send_mail(
+                'Confirmation de Réservation',
+                f'Votre réservation pour le {reservation.date} à {reservation.time} a été confirmée.',
+                'michael.benoit13@gmail.com',  # Remplacez par votre adresse e-mail d'envoi
+                [reservation.email],  # E-mail du client
+                fail_silently=False,
+            )
+
+            # Envoyer un e-mail de notification au restaurant
+            send_mail(
+                'Nouvelle Réservation',
+                f'Une nouvelle réservation a été effectuée pour le {reservation.date} à {reservation.time}.',
+                'michael.benoit13@gmail.com',  # Remplacez par votre adresse e-mail d'envoi
+                ['michael.benoit13@gmail.com'],  # Remplacez par l'e-mail du restaurant
+                fail_silently=False,
+            )
+
         else:
             messages.error(request, 'Sorry, we cannot accommodate your party as it exceeds our capacity limit.')
+
+            # Envoyer un e-mail de non-disponibilité au client
+            send_mail(
+                'Réservation Non Disponible',
+                'Nous sommes désolés, '
+                'mais nous ne pouvons pas accueillir votre réservation '
+                'à la date et à lheure choisies.','michael.benoit13@gmail.com',
+                [form.cleaned_data['email']],  # E-mail du client
+                fail_silently=False,
+            )
 
         return redirect('index')
 
     return render(request, 'index.html', {'form': form})
-
-
