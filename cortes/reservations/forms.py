@@ -1,6 +1,7 @@
 from django import forms
 from .models import TableReservation
 
+
 class TableReservationForm(forms.ModelForm):
     class Meta:
         model = TableReservation
@@ -16,4 +17,3 @@ class TableReservationForm(forms.ModelForm):
             'people': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'People', 'min': 1, 'max': 20}),
             'message': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Message'}),
         }
-
