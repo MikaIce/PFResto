@@ -16,8 +16,11 @@ Gestion des Créneaux Horaires : Permet de gérer les réservations en fonction 
 ## Technologies Utilisées
 
 Backend : Python 3.10.7, Django 4.2.7.
+
 Frontend : HTML,CSS, JS : Restaurantly - Restaurant Website Template
+
 Base de Données : postgreSQL
+
 Système de Mailing : 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
