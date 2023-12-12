@@ -30,6 +30,7 @@ EMAIL_HOST_PASSWORD =   # Votre mot de passe mail
 ## Installation
 
 pip install -r requirements.txt
+
 python manage.py runserver
 
 ## Crédits
